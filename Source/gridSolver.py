@@ -10,17 +10,22 @@ class GridSolver:
         self.state = execute('export')
         self.weights = [1, 2, 1, 1]
         self.gridSize = len(self.state[3])
+    
+    def reset_grid(self):
+        setup(GUI=True, render_delay_sec=0, gs=10)
+        self.state = execute('export')
+
 
     def valid_grid(self, grid):
-        for i in range(len(grid)):
-            for j in range(len(grid)):
+        for i in range(self.gridSize):
+            for j in range(self.gridSize):
                 color = grid[i, j]
                 if color == -1:
                     continue
                 if (i > 0 and grid[i - 1, j] == color) or \
-                   (i < len(grid) - 1 and grid[i + 1, j] == color) or \
+                   (i < self.gridSize - 1 and grid[i + 1, j] == color) or \
                    (j > 0 and grid[i, j - 1] == color) or \
-                   (j < len(grid) - 1 and grid[i, j + 1] == color):
+                   (j < self.gridSize - 1 and grid[i, j + 1] == color):
                     return False
         return True
 
@@ -28,8 +33,8 @@ class GridSolver:
         empty_cells = 0
         colors_used = set()
         conflict = 0
-        for i in range(len(grid)):
-            for j in range(len(grid)):
+        for i in range(self.gridSize):
+            for j in range(self.gridSize):
                 color = grid[i, j]
                 if color == -1:
                     empty_cells += 1
@@ -37,7 +42,7 @@ class GridSolver:
                     colors_used.add(color)
                     conflict += sum([
                         1 for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]
-                        if 0 <= i + di < len(grid) and 0 <= j + dj < len(grid) and grid[i + di, j + dj] == color
+                        if 0 <= i + di < self.gridSize and 0 <= j + dj < self.gridSize and grid[i + di, j + dj] == color
                     ])
         return (len(colors_used), empty_cells, conflict)
 
@@ -60,11 +65,11 @@ class GridSolver:
         moves = [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]
         if not strict:
             moves.extend([(-2, 0), (2, 0), (0, 2), (0, -2)])
-
+        
         for dy, dx in moves:
             new_pos = [current_pos[0] + dy, current_pos[1] + dx]
-            if 0 <= new_pos[0] < len(grid) and 0 <= new_pos[1] < len(grid):
-                shape_range = range(3) if strict else [random.randint(0, len(shapes) - 1)]
+            if 0 <= new_pos[0] < self.gridSize and 0 <= new_pos[1] < self.gridSize:
+                shape_range = range(3) if strict else [random.randint(0, len(shapes) - 1),random.randint(0, len(shapes) - 1)]
                 for new_shape_index in shape_range:
                     for new_color_index in range(len(colors)):
                         new_grid = grid.copy()
@@ -88,23 +93,38 @@ class GridSolver:
         no_place = 0
         strict = False
 
-        for _ in range(1000):
+        for iter in range(1000):
+            print("Iteration:",iter)
             neighbors = self.get_neighbors(current_state, strict)
             if not neighbors:
+                print("NoNeigh,", no_neigh)
                 no_neigh += 1
-                if no_neigh > 5:
-                    strict = True
-                unfilled_cells = [(x, y) for x in range(len(current_state[3])) 
-                                  for y in range(len(current_state[3])) if current_state[3][y, x] == -1]
-                if unfilled_cells:
-                    random_pos = random.choice(unfilled_cells)
-                    move = self.get_move_set_to_move(current_state[0], random_pos)
+                if(no_neigh>3):
+                    if(no_neigh>5):
+                        print("IT IS STRICT NOW")
+                        input("Press Enter")
+                        strict = True
+                        unfilledCells = [(x, y) for x in range(self.gridSize) for y in range(self.gridSize) if current_state[3][x, y] == -1]
+                        if(unfilledCells!=[]):
+                            random_pos = random.choice(unfilledCells)
+                            print
+                            move = self.get_move_set_to_move(current_state[0], random_pos)
+                            for m in move:
+                                current_state = execute(m)
+                            input("Correct")
+                        else:
+                            break
+                else:
+                    x,y = random.randint(0, self.gridSize-1),random.randint(0, self.gridSize-1)
+                    move = self.get_move_set_to_move(current_state[0],[x,y])
                     for m in move:
                         current_state = execute(m)
-                else:
-                    break
+                    if(current_state[0]==-1):
+                        print("GOOOOOODDDD")
+                    else:
+                        print("WHYyyyyyy soo many badddd")
             else:
-                no_neigh = 0
+                #no_neigh -= 1
                 best_neighbor = min(neighbors, key=lambda x: self.objective_func(x[0]))
                 best_neighbor_val = self.objective_func(best_neighbor[0])
 
@@ -115,6 +135,8 @@ class GridSolver:
                     for m in current_moves:
                         current_state = execute(m)
                     no_place += 1
+                else:
+                    print("NOOO BEST NEIGH",best_neighbor_val,current_val)
                 
                 if no_place > 4:
                     no_place = 0
@@ -139,6 +161,58 @@ class GridSolver:
 
         return solution
 
+    def test(self):
+        best_solutions = []
+        
+        for epoch in range(1):  # Run for 10 epochs
+            print("Running Epoch:",epoch)
+            
+            
+            # Move values closer to target
+            learning_rate = 0.01
+            self.weights = [1.5,0.0,1.0,1.0]
+            prev_score = 45.634886020970164
+            
+            # Comment 1: Make it np array. 
+            curState = self.state
+            for _ in range(1):
+                solution, moves = self.hill_climbing(curState)
+                if solution[3].all() is None:
+                    print(curState)
+                #self.reset_grid()
+                if checkGrid(solution[3]):
+                    break
+            
+            score = self.objective_func(solution)
+            best_solutions.append((score, solution, self.weights))
+            
+            
+
+            score_difference = prev_score - score
+            weight_updates = np.array([
+                score_difference * self.weights[0],  # Update for empty cells
+                score_difference * self.weights[1],  # Update for shapes
+                score_difference * self.weights[2],  # Update for conflicts
+                score_difference * self.weights[3]   # Update for color palette
+            ])
+
+            self.weights -= learning_rate*weight_updates
+            # Ensure weights remain positive
+            self.weights = np.maximum(self.weights, 0.1)     
+            
+            # Keep only the top 5 solutions
+            #best_solutions = best_solutions[:5]
+        # Sort solutions by score (lower is better)
+        best_solutions.sort(key=lambda x: x[0])
+        # Print the top 5 sets of values
+        print("Top 5 sets of (a, b, c, d) values:")
+        for i, (score, _, params) in enumerate(best_solutions, 1):
+            print(f"{i}. {params} (Score: {score})")
+        
+        # Return the best solution
+        return best_solutions[0][1]
+
+
     def run(self):
         start = time.time()
         solution = self.solve()
@@ -159,7 +233,7 @@ class GridSolver:
 
 # Usage
 solver = GridSolver(gui=True, render_delay_sec=0.1, grid_size=10)
-solver.run()
+solver.test()
 
 ## ALGORITHM HILL CLIMBING
 #def hillClimbing(state):

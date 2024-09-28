@@ -3,6 +3,7 @@ import numpy as np
 from gridgame import *
 import copy
 import sys
+import gridSolver
 
 ##############################################################################################################################
 
@@ -58,7 +59,7 @@ print(shapePos, currentShapeIndex, currentColorIndex, grid, placedShapes, done)
 
 start = time.time()  # <- do not modify this.
 
-
+gridSolver
 
 ##########################################
 # Write all your code in the area below. 
@@ -69,298 +70,263 @@ start = time.time()  # <- do not modify this.
 ##########################################
 # Initialize random values for a, b, c, d
 
-def ValidGrid(grid): 
-    # Check that no adjacent cells have the same color
-    for i in range(len(grid)):
-        for j in range(len(grid)):
-            color = grid[i, j]
-            if color==-1:
-                continue
-            if i > 0 and grid[i - 1, j] == color:
-                return False
-            if i < len(grid) - 1 and grid[i + 1, j] == color:
-                return False
-            if j > 0 and grid[i, j - 1] == color:
-                return False
-            if j < len(grid) - 1 and grid[i, j + 1] == color:
-                return False
+# def ValidGrid(grid): 
+#     # Check that no adjacent cells have the same color
+#     for i in range(len(grid)):
+#         for j in range(len(grid)):
+#             color = grid[i, j]
+#             if color==-1:
+#                 continue
+#             if i > 0 and grid[i - 1, j] == color:
+#                 return False
+#             if i < len(grid) - 1 and grid[i + 1, j] == color:
+#                 return False
+#             if j > 0 and grid[i, j - 1] == color:
+#                 return False
+#             if j < len(grid) - 1 and grid[i, j + 1] == color:
+#                 return False
 
-    return True
+#     return True
 
-def FetchColorPallate(grid):
-    emptyCells = 0
-    colorsUsed = set()
-    conflict = 0 
-    for i in range(len(grid)):
-        for j in range(len(grid)):
-            color = grid[i,j]
-            if color == -1:
-                emptyCells +=1
-            else:
-                colorsUsed.add(color)
-                if i > 0 and grid[i - 1, j] == color:
-                    conflict+=1
-                if i < len(grid) - 1 and grid[i + 1, j] == color:
-                    conflict+=1
-                if j > 0 and grid[i, j - 1] == color:
-                    conflict+=1
-                if j < len(grid) - 1 and grid[i, j + 1] == color:
-                    conflict+=1
-    colorPallate= len(colorsUsed)
-    return (colorPallate,emptyCells,conflict)
+# def FetchColorPallate(grid):
+#     emptyCells = 0
+#     colorsUsed = set()
+#     conflict = 0 
+#     for i in range(len(grid)):
+#         for j in range(len(grid)):
+#             color = grid[i,j]
+#             if color == -1:
+#                 emptyCells +=1
+#             else:
+#                 colorsUsed.add(color)
+#                 if i > 0 and grid[i - 1, j] == color:
+#                     conflict+=1
+#                 if i < len(grid) - 1 and grid[i + 1, j] == color:
+#                     conflict+=1
+#                 if j > 0 and grid[i, j - 1] == color:
+#                     conflict+=1
+#                 if j < len(grid) - 1 and grid[i, j + 1] == color:
+#                     conflict+=1
+#     colorPallate= len(colorsUsed)
+#     return (colorPallate,emptyCells,conflict)
 
-def GetMoveSetToMove(posA,posB):
-    xDiff = posA[1] - posB[1]
-    yDiff = posA[0] - posB[0]
-    moveset = []
-    if(xDiff > 0):
-        moveset += ['w']*abs(xDiff)
-    elif(xDiff < 0):
-        moveset += ['s']*abs(xDiff)
-    if(yDiff > 0 ):
-        moveset += ['a']*abs(yDiff)
-    else:
-        moveset += ['d']*abs(yDiff)
-    return moveset
+# def GetMoveSetToMove(posA,posB):
+#     xDiff = posA[1] - posB[1]
+#     yDiff = posA[0] - posB[0]
+#     moveset = []
+#     if(xDiff > 0):
+#         moveset += ['w']*abs(xDiff)
+#     elif(xDiff < 0):
+#         moveset += ['s']*abs(xDiff)
+#     if(yDiff > 0 ):
+#         moveset += ['a']*abs(yDiff)
+#     else:
+#         moveset += ['d']*abs(yDiff)
+#     return moveset
 
 
-##########################################
-# Fetch Neighbors
-##########################################
-#shapePos, currentShapeIndex, currentColorIndex, grid, placedShapes, done
+# ##########################################
+# # Fetch Neighbors
+# ##########################################
+# #shapePos, currentShapeIndex, currentColorIndex, grid, placedShapes, done
 
-def ObjectiveFunc(currState,weights):
-    #shapePos, currentShapeIndex, currentColorIndex, grid, placedShapes, done = currState
-    colorPallate,emptyCells,conflicts = FetchColorPallate(currState[3])
-    shapes = len(currState[4])
-    # Comment 2: NEED TO ADD ONE MORE WEIGHT FOR BIAS.
-    val = (weights[0]*emptyCells)+(weights[1]*shapes) +(weights[2]*conflicts**2) + (weights[3]*colorPallate**2)
-    return val
+# def ObjectiveFunc(currState,weights):
+#     #shapePos, currentShapeIndex, currentColorIndex, grid, placedShapes, done = currState
+#     colorPallate,emptyCells,conflicts = FetchColorPallate(currState[3])
+#     shapes = len(currState[4])
+#     # Comment 2: NEED TO ADD ONE MORE WEIGHT FOR BIAS.
+#     val = (weights[0]*emptyCells)+(weights[1]*shapes) +(weights[2]*conflicts**2) + (weights[3]*colorPallate**2)
+#     return val
 
-def getNeighbhors(state, strict= False):
-    neighbors = []
-    current_pos = state[0].copy()
-    grid = state[3]
+# def getNeighbhors(state, strict= False):
+#     neighbors = []
+#     current_pos = state[0].copy()
+#     grid = state[3]
 
-    if (strict):
-        moves = [
-            (0, 0),   # current position
-            (-1, 0),  # up
-            (1, 0),   # down
-            (0, -1),  # left
-            (0, 1),   # right
-            ]
-        #print("ITS STRICT NOWW")
-        for dy, dx in moves:
-            new_pos = [current_pos[0] + dy, current_pos[1] + dx]
-            #print(new_pos)
-            # Check if the new position is within the grid
-            if 0 <= new_pos[0] < len(grid) and 0 <= new_pos[1] < len(grid):
-                for new_shape_index in range(3):
-                    for new_color_index in range(len(colors)):
-                        new_grid = grid.copy()
-                        new_placed_shapes = state[4].copy()
-                        if canPlace(new_grid, shapes[new_shape_index], new_pos):
-                            placeShape(new_grid, shapes[new_shape_index], new_pos, new_color_index)
-                            new_placed_shapes.append((new_shape_index, new_pos.copy(), new_color_index))
+#     if (strict):
+#         moves = [
+#             (0, 0),   # current position
+#             (-1, 0),  # up
+#             (1, 0),   # down
+#             (0, -1),  # left
+#             (0, 1),   # right
+#             ]
+#         #print("ITS STRICT NOWW")
+#         for dy, dx in moves:
+#             new_pos = [current_pos[0] + dy, current_pos[1] + dx]
+#             #print(new_pos)
+#             # Check if the new position is within the grid
+#             if 0 <= new_pos[0] < len(grid) and 0 <= new_pos[1] < len(grid):
+#                 for new_shape_index in range(3):
+#                     for new_color_index in range(len(colors)):
+#                         new_grid = grid.copy()
+#                         new_placed_shapes = state[4].copy()
+#                         if canPlace(new_grid, shapes[new_shape_index], new_pos):
+#                             placeShape(new_grid, shapes[new_shape_index], new_pos, new_color_index)
+#                             new_placed_shapes.append((new_shape_index, new_pos.copy(), new_color_index))
 
-                            new_state = (new_pos, new_shape_index, new_color_index, new_grid, new_placed_shapes, state[5])
+#                             new_state = (new_pos, new_shape_index, new_color_index, new_grid, new_placed_shapes, state[5])
                             
-                            moves = GetMoveSetToMove(state[0], new_pos)
-                            moves += ['h'] * ((new_shape_index - state[1]) % len(shapes))
-                            moves += ['k'] * ((new_color_index - state[2]) % len(colors))
-                            moves += ['p']
-                            neighbors.append((new_state, moves))
-                #print(neighbors)
-    else :
-        moves = [
-            (0, 0),   # current position
-            (-1, 0),  # up
-            (1, 0),   # down
-            (0, -1),  # left
-            (0, 1),  # right
-            (-2,0),
-            (2,0),
-            (0,2),
-            (0,-2)
-        ]
+#                             moves = GetMoveSetToMove(state[0], new_pos)
+#                             moves += ['h'] * ((new_shape_index - state[1]) % len(shapes))
+#                             moves += ['k'] * ((new_color_index - state[2]) % len(colors))
+#                             moves += ['p']
+#                             neighbors.append((new_state, moves))
+#                 #print(neighbors)
+#     else :
+#         moves = [
+#             (0, 0),   # current position
+#             (-1, 0),  # up
+#             (1, 0),   # down
+#             (0, -1),  # left
+#             (0, 1),  # right
+#             (-2,0),
+#             (2,0),
+#             (0,2),
+#             (0,-2)
+#         ]
 
-        for dy, dx in moves:
-            new_pos = [current_pos[0] + dy, current_pos[1] + dx]
-            #print(new_pos)
-            # Check if the new position is within the grid
-            if 0 <= new_pos[0] < len(grid) and 0 <= new_pos[1] < len(grid):
-                for new_color_index in range(len(colors)):  # Generate 2 neighbors for each position
-                    new_shape_index = random.randint(0, len(shapes) - 1)
-                    #new_color_index = random.randint(0, len(colors) - 1)
-                    new_grid = grid.copy()
-                    new_placed_shapes = state[4].copy()
-                    if canPlace(new_grid, shapes[new_shape_index], new_pos):
-                        placeShape(new_grid, shapes[new_shape_index], new_pos, new_color_index)
-                        new_placed_shapes.append((new_shape_index, new_pos.copy(), new_color_index))
+#         for dy, dx in moves:
+#             new_pos = [current_pos[0] + dy, current_pos[1] + dx]
+#             #print(new_pos)
+#             # Check if the new position is within the grid
+#             if 0 <= new_pos[0] < len(grid) and 0 <= new_pos[1] < len(grid):
+#                 for new_color_index in range(len(colors)):  # Generate 2 neighbors for each position
+#                     new_shape_index = random.randint(0, len(shapes) - 1)
+#                     #new_color_index = random.randint(0, len(colors) - 1)
+#                     new_grid = grid.copy()
+#                     new_placed_shapes = state[4].copy()
+#                     if canPlace(new_grid, shapes[new_shape_index], new_pos):
+#                         placeShape(new_grid, shapes[new_shape_index], new_pos, new_color_index)
+#                         new_placed_shapes.append((new_shape_index, new_pos.copy(), new_color_index))
 
-                        new_state = (new_pos, new_shape_index, new_color_index, new_grid, new_placed_shapes, state[5])
+#                         new_state = (new_pos, new_shape_index, new_color_index, new_grid, new_placed_shapes, state[5])
                         
-                        moves = GetMoveSetToMove(current_pos, new_pos)
-                        moves += ['h'] * ((new_shape_index - state[1]) % len(shapes))
-                        moves += ['k'] * ((new_color_index - state[2]) % len(colors))
-                        moves += ['p']
-                        neighbors.append((new_state, moves))
+#                         moves = GetMoveSetToMove(current_pos, new_pos)
+#                         moves += ['h'] * ((new_shape_index - state[1]) % len(shapes))
+#                         moves += ['k'] * ((new_color_index - state[2]) % len(colors))
+#                         moves += ['p']
+#                         neighbors.append((new_state, moves))
 
-    return neighbors
+#     return neighbors
 
-#def getNeighbhor(state):
-    # neighbhor = copy.deepcopy(state)
-    # x,y = random.randint(0, len(grid)-1),random.randint(0, len(grid)-1)
-    # moves = []
-    # shape_index = random.randint(0, len(shapes) - 1)
-    # color_index = random.randint(0, len(colors) - 1)
+# #def getNeighbhor(state):
+#     # neighbhor = copy.deepcopy(state)
+#     # x,y = random.randint(0, len(grid)-1),random.randint(0, len(grid)-1)
+#     # moves = []
+#     # shape_index = random.randint(0, len(shapes) - 1)
+#     # color_index = random.randint(0, len(colors) - 1)
 
-    # if(canPlace(neighbhor[3],shapes[shape_index],[x,y])):
-    #     placeShape(neighbhor[3],shapes[shape_index],[x,y],color_index)
-    #     placedShapesInNeighbor = neighbhor[4]+ [shapes[shape_index]]
-    #     neighbhor = ([x,y],shape_index,color_index,neighbhor[3],placedShapesInNeighbor,neighbhor[5])
-    #     moves = GetMoveSetToMove(state[0], [x,y])
-    #     moves += ['h']*((shape_index - state[1])%9)
-    #     moves += ['k']*((shape_index - state[2])%4)
-    #     moves += ['p']
-    # return (neighbhor,moves)
+#     # if(canPlace(neighbhor[3],shapes[shape_index],[x,y])):
+#     #     placeShape(neighbhor[3],shapes[shape_index],[x,y],color_index)
+#     #     placedShapesInNeighbor = neighbhor[4]+ [shapes[shape_index]]
+#     #     neighbhor = ([x,y],shape_index,color_index,neighbhor[3],placedShapesInNeighbor,neighbhor[5])
+#     #     moves = GetMoveSetToMove(state[0], [x,y])
+#     #     moves += ['h']*((shape_index - state[1])%9)
+#     #     moves += ['k']*((shape_index - state[2])%4)
+#     #     moves += ['p']
+#     # return (neighbhor,moves)
 
-def hillClimbing(state,weights):
-    currentState = state
-    currentVal = ObjectiveFunc(state,weights)
-    currentMoves = []
-    noNeigh = 0
-    noPlace = 0
-    noBestNeigh = 0
-    strict = False
-    for i in range(1000): 
-        print("This is iteration:",i)
-        neighbors = getNeighbhors(currentState,strict)
-        if(neighbors==[]):
-            noNeigh +=1
-            if(noNeigh>3):
-                if(noNeigh>5):
-                    strict = True
-                    unfilledCells = [(x, y) for x in range(len(currentState[3])) for y in range(len(currentState[3])) if currentState[3][y, x] == -1]
-                    if(unfilledCells!=[]):
-                        random_pos = random.choice(unfilledCells)
-                        move = GetMoveSetToMove(currentState[0], random_pos)
-                        for m in move:
-                            currentState = execute(m)
-                    else:
-                        break
-                else:
-                    x,y = random.randint(0, len(grid)-1),random.randint(0, len(grid)-1)
-                    move = GetMoveSetToMove(currentState[0],[x,y])
-                    for m in move:
-                        currentState = execute(m)
-            #print("CHANGE YOUR NEIGHBHOUR FUNCTION PLEASSSSEEE",noNeigh)
-        else:
-            noNeigh = 0
-            bestNeighbor = None
-            bestNeighborVal = float('inf')
-            bestMoves = []
+# def hillClimbing(state,weights):
+#     currentState = state
+#     currentVal = ObjectiveFunc(state,weights)
+#     currentMoves = []
+#     noNeigh = 0
+#     noPlace = 0
+#     noBestNeigh = 0
+#     strict = False
+#     for i in range(1000): 
+#         print("This is iteration:",i)
+#         neighbors = getNeighbhors(currentState,strict)
+#         if(neighbors==[]):
+#             noNeigh +=1
+#             if(noNeigh>3):
+#                 if(noNeigh>5):
+#                     strict = True
+#                     unfilledCells = [(x, y) for x in range(len(currentState[3])) for y in range(len(currentState[3])) if currentState[3][y, x] == -1]
+#                     if(unfilledCells!=[]):
+#                         random_pos = random.choice(unfilledCells)
+#                         move = GetMoveSetToMove(currentState[0], random_pos)
+#                         for m in move:
+#                             currentState = execute(m)
+#                     else:
+#                         break
+#                 else:
+#                     x,y = random.randint(0, len(grid)-1),random.randint(0, len(grid)-1)
+#                     move = GetMoveSetToMove(currentState[0],[x,y])
+#                     for m in move:
+#                         currentState = execute(m)
+#             #print("CHANGE YOUR NEIGHBHOUR FUNCTION PLEASSSSEEE",noNeigh)
+#         else:
+#             noNeigh = 0
+#             bestNeighbor = None
+#             bestNeighborVal = float('inf')
+#             bestMoves = []
 
-            for neighbor, moves in neighbors:
-                neighborVal = ObjectiveFunc(neighbor,weights)
-                if neighborVal < bestNeighborVal:
-                    bestNeighbor = neighbor
-                    bestNeighborVal = neighborVal
-                    bestMoves = moves
-            if(bestNeighbor):
-                #print("CurrV",currentVal,"BestNVal",bestNeighborVal)
-                if(bestNeighborVal <= currentVal):
-                    noBestNeigh = 0
-                    currentState = bestNeighbor
-                    currentVal = bestNeighborVal
-                    currentMoves = bestMoves
-                    for m in currentMoves:
-                        #print("Move Made",m)
-                        currentState = execute(m)
-                    noPlace+=1
-                else:
-                    #noBestNeigh+=1
-                    print("Not the best Neigh")
-            if(noPlace>4):
-                noPlace = 0
-                if(ValidGrid(currentState[3])==False):
-                    for _ in range(5):
-                        currentState = execute('u')
-                    currentVal = ObjectiveFunc(currentState,weights)
+#             for neighbor, moves in neighbors:
+#                 neighborVal = ObjectiveFunc(neighbor,weights)
+#                 if neighborVal < bestNeighborVal:
+#                     bestNeighbor = neighbor
+#                     bestNeighborVal = neighborVal
+#                     bestMoves = moves
+#             if(bestNeighbor):
+#                 #print("CurrV",currentVal,"BestNVal",bestNeighborVal)
+#                 if(bestNeighborVal <= currentVal):
+#                     noBestNeigh = 0
+#                     currentState = bestNeighbor
+#                     currentVal = bestNeighborVal
+#                     currentMoves = bestMoves
+#                     for m in currentMoves:
+#                         #print("Move Made",m)
+#                         currentState = execute(m)
+#                     noPlace+=1
+#                 else:
+#                     #noBestNeigh+=1
+#                     print("Not the best Neigh")
+#             if(noPlace>4):
+#                 noPlace = 0
+#                 if(ValidGrid(currentState[3])==False):
+#                     for _ in range(5):
+#                         currentState = execute('u')
+#                     currentVal = ObjectiveFunc(currentState,weights)
                     
 
-    return currentState, currentMoves
+#     return currentState, currentMoves
 
 
-def test(state):
-    weights = [random.uniform(0,5) for _ in range(5)]
-    best_solutions = []
-    
-    for epoch in range(10):  # Run for 10 epochs
-        print("Running Epoch:",epoch)
-        
-        
-        # Move values closer to target
-        learning_rate = 0.1
-        weights = [random.uniform(0,5) for _ in range(5)]
-        
-        # Comment 1: Make it np array. 
-        curState = state
-        for _ in range(5):
-            solution, moves = hillClimbing(curState,weights)
-            if solution[3].all() is None:
-                print(curState)
-            if checkGrid(solution[3]):
-                break
-        
-        score = ObjectiveFunc(solution,weights)
-        best_solutions.append((score, solution, weights))
-        
-        # Sort solutions by score (lower is better)
-        best_solutions.sort(key=lambda x: x[0])
-        
-        # Keep only the top 5 solutions
-        best_solutions = best_solutions[:5]
-    
-    # Print the top 5 sets of values
-    print("Top 5 sets of (a, b, c, d) values:")
-    for i, (score, _, params) in enumerate(best_solutions, 1):
-        print(f"{i}. {params} (Score: {score})")
-    
-    # Return the best solution
-    return best_solutions[0][1]
+# 
 
-# Call the solve function
-# solution = solve(State)
 
-# if checkGrid(solution[3]):
-#     print("Solution found:")
-#     printGridState(solution[3])
-# else:
-#     print("No valid solution found. Best attempt:")
-#     printGridState(solution[3])
+# # Call the solve function
+# # solution = solve(State)
 
-#print(solution)
+# # if checkGrid(solution[3]):
+# #     print("Solution found:")
+# #     printGridState(solution[3])
+# # else:
+# #     print("No valid solution found. Best attempt:")
+# #     printGridState(solution[3])
 
-def solve(state):
-        bestSolution = None
-        bestScore = float('inf')
-        curState = state
-        weights = [1,2,1,1]
+# #print(solution)
 
-        for _ in range(5):
-            solution,moves = hillClimbing(curState,weights)
-            if (solution[3].all() == None):
-                print(curState)
-            if checkGrid(solution[3]):
-                break
-            setup(GUI = True, render_delay_sec = 0.1, gs = 10)
-            curState = execute('e')
+# def solve(state):
+#         bestSolution = None
+#         bestScore = float('inf')
+#         curState = state
+#         weights = [1,2,1,1]
 
-        return solution
+#         for _ in range(5):
+#             solution,moves = hillClimbing(curState,weights)
+#             if (solution[3].all() == None):
+#                 print(curState)
+#             if checkGrid(solution[3]):
+#                 break
+#             setup(GUI = True, render_delay_sec = 0.1, gs = 10)
+#             curState = execute('e')
 
-State = (shapePos, currentShapeIndex, currentColorIndex, grid, placedShapes  , done)
+#         return solution
+
+# State = (shapePos, currentShapeIndex, currentColorIndex, grid, placedShapes  , done)
 #test(State)
 
 
@@ -373,15 +339,15 @@ State = (shapePos, currentShapeIndex, currentColorIndex, grid, placedShapes  , d
 # print(len(N[4]))
 
 
-solution = solve(State)
+#solution = solve(State)
 
-if checkGrid(solution[3]):
-    print("Solution found:")
-    printGridState(solution[3])
-else:
-    print("No valid solution found. Best attempt:")
-    printGridState(solution[3])
-print(solution)
+#if checkGrid(solution[3]):
+#    print("Solution found:")
+#    printGridState(solution[3])
+#else:
+#    print("No valid solution found. Best attempt:")
+#    printGridState(solution[3])
+#print(solution)
 
 ########################################
 
