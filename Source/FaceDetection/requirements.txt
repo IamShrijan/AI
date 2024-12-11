@@ -1,0 +1,6 @@
+huggingface_hub
+ultralytics
+supervision
+pillow
+opencv-python
+numpy
