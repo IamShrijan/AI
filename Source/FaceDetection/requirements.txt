@@ -4,3 +4,5 @@ supervision
 pillow
 opencv-python
 numpy
+insightface
+onnxruntime
